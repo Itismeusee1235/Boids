@@ -19,7 +19,8 @@ int main()
 
     while (win.isOpen())
     {
-        float deltaTime = clock.restart().asSeconds();
+        float deltaTime = clock.restart().asSeconds();\
+        Vector2i mousePos = Mouse::getPosition(win);
 
         Event ev;
         while (win.pollEvent(ev))
@@ -28,6 +29,14 @@ int main()
             {
                 win.close();
             }
+            else if (ev.type == Event::KeyPressed)
+            {
+                if(ev.key.code == Keyboard::Space)
+                {
+                    test.SetVelocity(Vector2f(50,0));
+                }
+            }
+            
                        
         }
 
