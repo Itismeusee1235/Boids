@@ -69,3 +69,10 @@ void Vector::print()
   std::cout << "y: " << this->y << " ";
   std::cout << "norm: " << this->norm() << std::endl;
 }
+
+void Vector::setMag(double mag)
+{
+  this->normalize();
+  x *= mag;
+  y *= mag;
+}

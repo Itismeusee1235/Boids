@@ -30,6 +30,8 @@ struct Vector {
   void normalize();
   Vector normalized() const;
   Vector rotate(double rads) const;
+  double rotation() { return atan2(y, x); };
+  void setMag(double mag);
 
   void print();
 };
