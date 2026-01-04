@@ -2,6 +2,9 @@
 *.o
 **/*.o
 
+*.out
+**./*.out
+
 *.d
 **/*.d
 
@@ -9,4 +12,5 @@
 **/*.txt
 
 boids-sim
+test
 
