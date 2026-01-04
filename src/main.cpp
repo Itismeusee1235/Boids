@@ -12,16 +12,17 @@ using namespace std;
 
 const int WIDTH = 800;
 const int HEIGHT = 600;
+const int scale = 1;
 
 random_device rd;
 mt19937 gen(rd());
-uniform_real_distribution<double> PosXGen(0, WIDTH);
-uniform_real_distribution<double> PosYGen(0, HEIGHT);
+uniform_real_distribution<double> PosXGen(0, WIDTH* scale);
+uniform_real_distribution<double> PosYGen(0, HEIGHT* scale);
 uniform_real_distribution<double> AngleGen(0, 2 * M_PI);
 uniform_real_distribution<double> MagGen(0, 160);
 
 const string BOID_IMG_PATH = "/home/fenrir/Programming/C++/Boids/Bird.png";
-const int num = 50;
+const int num = 100;
 
 int main()
 {
@@ -36,7 +37,7 @@ int main()
     return -1;
   }
 
-  SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+  SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
   if (!renderer) {
     printf("Failed to maker renderer : %s", SDL_GetError());
     return -1;
@@ -63,10 +64,12 @@ int main()
   SDL_FreeSurface(loadedSurface);
 
   SDL_Rect textureRect;
-  textureRect.w = 16;
-  textureRect.h = 16;
+  textureRect.w = 16 / scale;
+  textureRect.h = 16 / scale;
 
   Boid* Boid_List[num];
+  Vector* Object_List[1];
+  Object_List[0] = new Vector(0, 0);
 
   for (int i = 0; i < num; i++) {
     Vector pos(PosXGen(gen), PosYGen(gen));
@@ -75,8 +78,11 @@ int main()
     vel.setMag(MagGen(gen));
 
     vel.print();
-    Boid_List[i] = new Boid(pos, vel, WIDTH, HEIGHT);
+    Boid_List[i] = new Boid(pos, vel, WIDTH * scale, HEIGHT * scale);
   }
+
+  Boid_List[0]->pos = Vector(400, 300);
+  Boid_List[0]->pos = Vector(380, 300);
 
   Uint64 last = SDL_GetPerformanceCounter();
   Uint64 now;
@@ -88,12 +94,14 @@ int main()
     now = SDL_GetPerformanceCounter();
     deltaTime = (double)(now - last) / (double)SDL_GetPerformanceFrequency();
     last = now;
+    // cout << 1 / deltaTime << " " << SDL_GetPerformanceFrequency() << endl;
 
     int m_X;
     int m_Y;
     SDL_GetMouseState(&m_X, &m_Y);
-
     Vector mouse(m_X, m_Y);
+
+    *Object_List[0] = mouse;
 
     SDL_Event ev;
     while (SDL_PollEvent(&ev)) {
@@ -117,10 +125,12 @@ int main()
     for (int i = 0; i < num; i++) {
       textureRect.x = static_cast<int>(Boid_List[i]->pos.x) - 8;
       textureRect.y = static_cast<int>(Boid_List[i]->pos.y) - 8;
+      textureRect.x /= scale;
+      textureRect.y /= scale;
       SDL_RenderCopyEx(renderer, boidTexture, NULL, &textureRect, Boid_List[i]->rotation() + 90, NULL, SDL_FLIP_NONE);
 
       if (step) {
-        Boid_List[i]->update(deltaTime, Boid_List, num);
+        Boid_List[i]->update(deltaTime, Boid_List, num, *Object_List, 1);
       }
     }
 
