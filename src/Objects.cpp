@@ -2,6 +2,19 @@
 #include <algorithm>
 #include <SDL2/SDL.h>
 
+void RayHit::Draw(SDL_Renderer* renderer)
+{
+  int radius = 5;
+  Vector centre = point;
+
+  SDL_SetRenderDrawColor(renderer, 0, 255, 255, 255);
+
+  for (int w = -radius; w <= radius; w++) {
+    int y = sqrt(radius * radius - w * w);
+    SDL_RenderDrawLine(renderer, (int)(w + centre.x), (int)(-y + centre.y), (int)(w + centre.x), (int)(y + centre.y));
+  }
+}
+
 Circle::Circle(Vector& c, double r)
 {
   this->centre = c;
@@ -54,6 +67,15 @@ void Circle::Draw(SDL_Renderer* renderer)
     int y = sqrt(radius * radius - w * w);
     SDL_RenderDrawLine(renderer, (int)(w + centre.x), (int)(-y + centre.y), (int)(w + centre.x), (int)(y + centre.y));
   }
+}
+
+bool Circle::containsCheck(Vector point) const
+{
+  Vector diff = point - centre;
+  if (diff.norm() > radius) {
+    return false;
+  }
+  return true;
 }
 
 Rectangle::Rectangle(Vector& c, double l, double h)
@@ -123,4 +145,13 @@ void Rectangle::Draw(SDL_Renderer* renderer)
   rec.x = (int)(centre.x - rec.w / 2);
   rec.y = (int)(centre.y - rec.h / 2);
   SDL_RenderFillRect(renderer, &rec);
+}
+
+bool Rectangle::containsCheck(Vector point) const
+{
+  Vector diff = point - centre;
+  if (std::fabs(diff.x) > length / 2 || std::fabs(diff.y) > height / 2) {
+    return false;
+  }
+  return true;
 }

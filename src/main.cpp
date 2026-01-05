@@ -7,6 +7,7 @@
 #include <SDL2/SDL.h>
 #include <cmath>
 #include <random>
+#include "../include/Objects.hpp"
 
 using namespace std;
 
@@ -20,9 +21,24 @@ uniform_real_distribution<double> PosXGen(0, WIDTH* scale);
 uniform_real_distribution<double> PosYGen(0, HEIGHT* scale);
 uniform_real_distribution<double> AngleGen(0, 2 * M_PI);
 uniform_real_distribution<double> MagGen(0, 160);
+uniform_int_distribution<int> N(0, 100);
+uniform_real_distribution<double> LenGen(40, 80);
+uniform_real_distribution<double> ObsPosGenX(80, 720);
+uniform_real_distribution<double> ObsPosGenY(80, 520);
 
 const string BOID_IMG_PATH = "/home/fenrir/Programming/C++/Boids/Bird.png";
 const int num = 100;
+const int obj_num = 10;
+
+bool checkIntersection(Vector pos, Object** Object_List, int num)
+{
+  for (int i = 0; i < num; i++) {
+    if (Object_List[i]->containsCheck(pos)) {
+      return true;
+    }
+  }
+  return false;
+}
 
 int main()
 {
@@ -68,11 +84,27 @@ int main()
   textureRect.h = 16 / scale;
 
   Boid* Boid_List[num];
-  Vector* Object_List[1];
-  Object_List[0] = new Vector(0, 0);
+  Object* Object_List[obj_num];
+  Vector center(400, 300);
+
+  for (int i = 0; i < obj_num; i++) {
+    int type = N(gen) % 2;
+    center.x = ObsPosGenX(gen);
+    center.y = ObsPosGenY(gen);
+    if (type == 1) {
+      Object_List[i] = new Circle(center, LenGen(gen));
+    } else {
+      Object_List[i] = new Rectangle(center, LenGen(gen), LenGen(gen));
+    }
+  }
 
   for (int i = 0; i < num; i++) {
     Vector pos(PosXGen(gen), PosYGen(gen));
+
+    while (checkIntersection(pos, Object_List, obj_num)) {
+      pos = Vector(PosXGen(gen), PosYGen(gen));
+    }
+
     Vector vel(1, 0);
     vel = vel.rotate(AngleGen(gen));
     vel.setMag(MagGen(gen));
@@ -81,15 +113,13 @@ int main()
     Boid_List[i] = new Boid(pos, vel, WIDTH * scale, HEIGHT * scale);
   }
 
-  Boid_List[0]->pos = Vector(400, 300);
-  Boid_List[0]->pos = Vector(380, 300);
-
   Uint64 last = SDL_GetPerformanceCounter();
   Uint64 now;
   double deltaTime;
 
   bool exit = false;
   bool step = false;
+
   while (!exit) {
     now = SDL_GetPerformanceCounter();
     deltaTime = (double)(now - last) / (double)SDL_GetPerformanceFrequency();
@@ -100,8 +130,6 @@ int main()
     int m_Y;
     SDL_GetMouseState(&m_X, &m_Y);
     Vector mouse(m_X, m_Y);
-
-    *Object_List[0] = mouse;
 
     SDL_Event ev;
     while (SDL_PollEvent(&ev)) {
@@ -122,15 +150,25 @@ int main()
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
     SDL_RenderClear(renderer);
 
+    SDL_SetRenderDrawColor(renderer, 0, 0, 126, 255);
+
+    for (int i = 0; i < obj_num; i++) {
+      Object_List[i]->Draw(renderer);
+    }
+
+    SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
+
     for (int i = 0; i < num; i++) {
       textureRect.x = static_cast<int>(Boid_List[i]->pos.x) - 8;
       textureRect.y = static_cast<int>(Boid_List[i]->pos.y) - 8;
       textureRect.x /= scale;
       textureRect.y /= scale;
-      SDL_RenderCopyEx(renderer, boidTexture, NULL, &textureRect, Boid_List[i]->rotation() + 90, NULL, SDL_FLIP_NONE);
+      Boid_List[i]->Draw(renderer, boidTexture, &textureRect);
+    }
 
-      if (step) {
-        Boid_List[i]->update(deltaTime, Boid_List, num, *Object_List, 1);
+    if (step) {
+      for (int i = 0; i < num; i++) {
+        Boid_List[i]->update(deltaTime, Boid_List, num, Object_List, obj_num, renderer);
       }
     }
 

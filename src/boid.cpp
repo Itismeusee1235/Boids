@@ -1,4 +1,6 @@
 #include "../include/boid.hpp"
+#include "../include/Objects.hpp"
+#include <SDL2/SDL.h>
 #include <iostream>
 #include <random>
 
@@ -6,7 +8,7 @@ std::random_device boid_rd;
 std::mt19937 boids_gen(boid_rd());
 std::uniform_real_distribution<double> WanderAngleGen(-1, 1);
 
-void Boid::update(double deltaTime, Boid** Boid_List, int n, Vector* Object_List, int n_obj)
+void Boid::update(double deltaTime, Boid** Boid_List, int n, Object** Objects, int n_obj, SDL_Renderer* renderer)
 {
   Vector steer(0, 0);
 
@@ -92,6 +94,45 @@ void Boid::update(double deltaTime, Boid** Boid_List, int n, Vector* Object_List
   steer -= SEGREGATION_W * TotalSegregation;
   steer += ALIGNMENT_W * TotalAlignment;
 
+  Ray r1, r2, r3;
+  r1.origin = pos + vel.normalized() * 8;
+  r1.dir = vel.normalized();
+  r1.length = 24;
+
+  r2.origin = pos + vel.normalized() * 8;
+  r2.dir = vel.normalized().rotate(M_PI / 6);
+  r2.length = 26;
+
+  r3.origin = pos + vel.normalized() * 8;
+  r3.dir = vel.normalized().rotate(-M_PI / 6);
+  r3.length = 24;
+
+  RayHit hit;
+  hit.dist = MAXFLOAT;
+  RayHit testHit;
+  for (int i = 0; i < n_obj; i++) {
+    if (Objects[i]->rayCastCheck(r1, testHit)) {
+      if (testHit.dist < hit.dist) {
+        hit = testHit;
+      }
+    }
+    if (Objects[i]->rayCastCheck(r2, testHit)) {
+      if (testHit.dist < hit.dist) {
+        hit = testHit;
+      }
+    }
+    if (Objects[i]->rayCastCheck(r3, testHit)) {
+      if (testHit.dist < hit.dist) {
+        hit = testHit;
+      }
+    }
+  }
+
+  if (hit.dist <= AVOIDANCE_RADIUS) {
+    steer += hit.normal * (MAX_AVOIDANCE_FORCE * 2) * ((AVOIDANCE_RADIUS - hit.dist) / AVOIDANCE_RADIUS);
+    // hit.Draw(renderer);
+  }
+
   vel += steer * deltaTime;
 
   if (vel.norm() > this->MAX_VEL) {
@@ -114,15 +155,15 @@ void Boid::update(double deltaTime, Boid** Boid_List, int n, Vector* Object_List
   //   pos.y += MAX_Y;
   // }
 
-  if (pos.x < margin) {
+  if (pos.x < margin && vel.x < 0) {
     vel.x += turnfactor;
-  } else if (pos.x > (MAX_X - margin)) {
+  } else if (pos.x > (MAX_X - margin) && vel.x > 0) {
     vel.x -= turnfactor;
   }
 
-  if (pos.y < margin) {
+  if (pos.y < margin && vel.y < 0) {
     vel.y += turnfactor;
-  } else if (pos.y > (MAX_Y - margin)) {
+  } else if (pos.y > (MAX_Y - margin) && vel.y > 0) {
     vel.y -= turnfactor;
   }
 }
@@ -133,4 +174,16 @@ void Boid::print()
   pos.print();
   std::cout << "vel : " << std::endl;
   vel.print();
+}
+
+void Boid::Draw(SDL_Renderer* renderer, SDL_Texture* texture, SDL_Rect* texRect)
+{
+  // Vector src = pos + vel.normalized() * 8;
+  // Vector end = src + vel.normalized() * 18;
+  // Vector end1 = src + (vel.normalized().rotate(M_PI / 6) * 16);
+  // Vector end2 = src + (vel.normalized().rotate(-M_PI / 6) * 16);
+  // SDL_RenderDrawLine(renderer, src.x, src.y, end.x, end.y);
+  // SDL_RenderDrawLine(renderer, src.x, src.y, end1.x, end1.y);
+  // SDL_RenderDrawLine(renderer, src.x, src.y, end2.x, end2.y);
+  SDL_RenderCopyEx(renderer, texture, NULL, texRect, this->rotation() + 90, NULL, SDL_FLIP_NONE);
 }

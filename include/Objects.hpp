@@ -14,11 +14,13 @@ struct RayHit {
   double dist = 0.0;
   Vector point;
   Vector normal;
+  void Draw(SDL_Renderer* renderer);
 };
 
 class Object {
   public:
   virtual bool rayCastCheck(Ray const& ray, RayHit& hit) const = 0;
+  virtual bool containsCheck(Vector point) const = 0;
   virtual void Draw(SDL_Renderer* render) = 0;
 };
 
@@ -34,6 +36,7 @@ class Circle : public Object {
   }
   Circle(Vector& c, double r);
   bool rayCastCheck(Ray const& ray, RayHit& hit) const override;
+  bool containsCheck(Vector point) const override;
   void Draw(SDL_Renderer* render) override;
 };
 
@@ -51,6 +54,7 @@ class Rectangle : public Object {
   Rectangle(Vector& centre, double length, double height);
 
   bool rayCastCheck(Ray const& ray, RayHit& hit) const override;
+  bool containsCheck(Vector point) const override;
   void Draw(SDL_Renderer* render) override;
 };
 
